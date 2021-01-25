@@ -41,14 +41,6 @@ def scheduler_force_stable(name, builders, template_dfl, codebases_stable):
         ])
 
 def scheduler_nightly(name, builders, template_dfl, codebases, hour, minute):
-    def filter_nightly(c):
-        c_cb = c.properties.getProperty('codebase')
-        cb = codebases.get(c_cb)
-        return cb != None \
-            and cb.get('branch') == c.properties.getProperty('branch') \
-            and (cb.get('revision') == None \
-                or cb.get('revision') == c.properties.getProperty('revision'))
-
     return schedulers.Nightly(
         name=name,
         codebases=codebases,
@@ -58,7 +50,6 @@ def scheduler_nightly(name, builders, template_dfl, codebases, hour, minute):
         builderNames=builders,
         hour=hour,
         minute=minute,
-        change_filter=filter_nightly,
         onlyIfChanged=True)
 
 def scheduler_force_windows_tools(name, buttonName, builders, codebases):
