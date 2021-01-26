@@ -108,6 +108,62 @@ def step_upload_upgrade(srcfmt, destfmt):
         masterdest=util.Interpolate(destpath + "/respository"),
         url=None)
 
+# Clean sstate of recipes that cause problems as mirror
+def step_clean_problematic(workfmt):
+    return [
+        steps.ShellSequence(
+            workdir=util.Interpolate(workfmt + "/build-0"),
+            name='Clean problematic sstate',
+            env={
+                'BB_ENV_EXTRAWHITE': "MACHINE DISTRO BUIILD_UID LAYERS_DIR",
+                'LAYERS_DIR': util.Interpolate(workfmt + "/build-0/layers"),
+                'BUILDDIR': util.Interpolate(workfmt + "/build-0"),
+                'PATH': [ util.Interpolate(workfmt + "/build-0/layers/bitbake/bin"),
+                          "${PATH}"],
+                'MACHINE': "xenclient-dom0"
+            },
+            haltOnFailure=True,
+            commands=[
+                util.ShellArg(command=[ 'bitbake', 'ocaml-cross-x86_64',
+                    '-c', 'cleansstate' ],
+                    haltOnFailure=True),
+                util.ShellArg(command=[ 'bitbake', 'findlib-cross-x86_64',
+                    '-c', 'cleansstate' ],
+                    haltOnFailure=True)
+            ]
+        ),
+        steps.ShellCommand(
+            workdir=util.Interpolate(workfmt + "/build-0"),
+            name='Clean problematic sstate',
+            env={
+                'BB_ENV_EXTRAWHITE': "MACHINE DISTRO BUIILD_UID LAYERS_DIR",
+                'LAYERS_DIR': util.Interpolate(workfmt + "/build-0/layers"),
+                'BUILDDIR': util.Interpolate(workfmt + "/build-0"),
+                'PATH': [ util.Interpolate(workfmt + "/build-0/layers/bitbake/bin"),
+                          "${PATH}"],
+                'MACHINE': "openxt-installer"
+            },
+            command=[ 'bitbake', 'xenclient-installer-image', '-c', 'cleansstate'],
+            haltOnFailure=True
+        )
+    ]
+
+# Flush and upload the sstate-cache to the build-master.
+def step_upload_sstate(srcfmt, destfmt):
+    destpath = destfmt + "/%(prop:buildername)s/sstate/"
+
+    return [
+        steps.MasterShellCommand(
+            command=[ "rm", "-rf", util.Interpolate(destpath)]
+        ),
+        steps.MultipleFileUpload(
+            workdir=util.Interpolate(srcfmt + '/sstate-cache'),
+            workersrcs=['{:02x}'.format(n) for n in range(256)] + ['debian-10'],
+            masterdest=util.Interpolate(destpath),
+            url=None
+        )
+    ]
+
 # Layout of the codebases for the different repositories for bordel.
 codebase_layout = {
     'bats-suite': '/openxt/bats-suite',
@@ -275,7 +331,7 @@ def factory_custom_legacy_clean(workdir_base, deploy_base, codebases_oe):
 # "stable" will run a build using only the Openembedded resources.
 # No externalsrc involved and the recipes dictate what OE will fetch.
 # Only the download cache is re-used, each build start from a fresh sstate.
-def factory_stable(workdir_base, deploy_base, codebases_stable):
+def factory_stable(workdir_base, deploy_base, codebases_stable, deploy_sstate):
     workdir_fmt = workdir_base + "/%(prop:buildername)s-%(prop:buildnumber)s"
     f = util.BuildFactory()
     # Fetch sources.
@@ -299,5 +355,8 @@ def factory_stable(workdir_base, deploy_base, codebases_stable):
     f.addStep(step_bordel_deploy(util.Interpolate(workdir_fmt)))
     f.addStep(step_upload_installer(workdir_fmt, deploy_base))
     f.addStep(step_upload_upgrade(workdir_fmt, deploy_base))
+    if deploy_sstate:
+        f.addSteps(step_clean_problematic(workdir_fmt))
+        f.addSteps(step_upload_sstate(workdir_fmt, deploy_base))
     f.addStep(step_remove_history(workdir_base))
     return f
