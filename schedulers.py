@@ -41,6 +41,11 @@ def scheduler_force_stable(name, builders, template_dfl, codebases_stable):
         ])
 
 def scheduler_nightly(name, builders, template_dfl, codebases, hour, minute):
+    def filter_change(c):
+        return c.codebase in codebases and \
+               c.branch == codebases.get(c.codebase).get('branch') and \
+               not codebases.get(c.codebase).get('revision')
+
     return schedulers.Nightly(
         name=name,
         codebases=codebases,
@@ -50,6 +55,7 @@ def scheduler_nightly(name, builders, template_dfl, codebases, hour, minute):
         builderNames=builders,
         hour=hour,
         minute=minute,
+        change_filter=util.ChangeFilter(filter_fn=filter_change),
         onlyIfChanged=True)
 
 def scheduler_force_windows_tools(name, buttonName, builders, codebases):
@@ -71,6 +77,11 @@ def scheduler_force_windows_tools(name, buttonName, builders, codebases):
         ])
 
 def scheduler_nightly_windows_tools(name, builders, codebases, hour, minute):
+    def filter_change(c):
+        return c.codebase in codebases and \
+               c.branch == codebases.get(c.codebase).get('branch') and \
+               not codebases.get(c.codebase).get('revision')
+
     return schedulers.Nightly(
         name=name,
         codebases=codebases,
@@ -78,4 +89,5 @@ def scheduler_nightly_windows_tools(name, builders, codebases, hour, minute):
         builderNames=builders,
         hour=hour,
         minute=minute,
+        change_filter=util.ChangeFilter(filter_fn=filter_change),
         onlyIfChanged=True)
