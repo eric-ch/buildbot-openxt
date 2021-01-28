@@ -51,10 +51,9 @@ def codebaseGenerator(chdict):
 
 #
 # Change tracking.
-# Polls the upstream repositories, in relevant branches, for changes every 15
-# minutes.
+# Poll upstream codebases for changes every 4h.
 #
-pollinterval = 15 * 60
+pollinterval = 4 * 60 * 60
 change_source = []
 for repourl, branches in repo_branches.items():
     change_source.append(changes.GitPoller(
