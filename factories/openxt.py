@@ -115,7 +115,7 @@ def step_clean_problematic(workfmt):
             workdir=util.Interpolate(workfmt + "/build-0"),
             name='Clean problematic sstate',
             env={
-                'BB_ENV_EXTRAWHITE': "MACHINE DISTRO BUIILD_UID LAYERS_DIR",
+                'BB_ENV_EXTRAWHITE': "MACHINE DISTRO BUILD_UID LAYERS_DIR",
                 'LAYERS_DIR': util.Interpolate(workfmt + "/build-0/layers"),
                 'BUILDDIR': util.Interpolate(workfmt + "/build-0"),
                 'PATH': [ util.Interpolate(workfmt + "/build-0/layers/bitbake/bin"),
@@ -136,7 +136,7 @@ def step_clean_problematic(workfmt):
             workdir=util.Interpolate(workfmt + "/build-0"),
             name='Clean problematic sstate',
             env={
-                'BB_ENV_EXTRAWHITE': "MACHINE DISTRO BUIILD_UID LAYERS_DIR",
+                'BB_ENV_EXTRAWHITE': "MACHINE DISTRO BUILD_UID LAYERS_DIR",
                 'LAYERS_DIR': util.Interpolate(workfmt + "/build-0/layers"),
                 'BUILDDIR': util.Interpolate(workfmt + "/build-0"),
                 'PATH': [ util.Interpolate(workfmt + "/build-0/layers/bitbake/bin"),
