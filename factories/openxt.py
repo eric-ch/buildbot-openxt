@@ -124,6 +124,9 @@ def step_clean_problematic(workfmt):
             },
             haltOnFailure=True,
             commands=[
+                util.ShellArg(command=[ 'bitbake', 'ghc-native',
+                    '-c', 'cleansstate' ],
+                    haltOnFailure=True),
                 util.ShellArg(command=[ 'bitbake', 'ocaml-cross-x86_64',
                     '-c', 'cleansstate' ],
                     haltOnFailure=True),
