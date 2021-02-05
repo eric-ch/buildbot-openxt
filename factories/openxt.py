@@ -13,12 +13,9 @@ step_timeout = 5030
 # | certs/
 # | workdir_base/
 # | workdir_base/downloads
-# | workdir_base/<ver>-custom-quick
-# | workdir_base/<ver>-custom-quick/certs -> ../../certs
-# | workdir_base/<ver>-custom-quick/downloads -> ../downloals
-# | workdir_base/<ver>-custom-clean
-# | workdir_base/<ver>-custom-clean/certs -> ../../certs
-# | workdir_base/<ver>-custom-clean/downloads -> ../downloads
+# | workdir_base/<ver>-custom
+# | workdir_base/<ver>-custom/certs -> ../../certs
+# | workdir_base/<ver>-custom/downloads -> ../downloads
 # | workdir_base/<ver>-stable
 # | workdir_base/<ver>-stable/certs -> ../../certs
 # | workdir_base/<ver>-stable/downloads -> ../downloads
@@ -51,21 +48,16 @@ def step_remove_history(workdir):
             xargs rm -rf \
             ")])
 
-def step_bordel_config(workdir, template):
+def step_bordel_config(workdir, template, legacy=False, sstate_uri=""):
     return steps.ShellCommand(
         workdir=workdir,
+        haltOnFailure=True,
+        name='Configure source tree',
         command=[ './openxt/bordel/bordel', '-i', '0', 'config',
             '--default', '--force', '--rmwork', '--no-repo-branch',
-            '-t', template ],
-        haltOnFailure=True, name='Configure source tree')
-
-def step_bordel_config_legacy(workdir, template):
-    return steps.ShellCommand(
-        workdir=workdir,
-        command=[ './openxt/bordel/bordel', '-i', '0', 'config',
-            '--default', '--force', '--rmwork',
-            '-t', template ],
-        haltOnFailure=True, name='Configure source tree')
+            '-t', template ] +
+            ([ '--no-repo-branch' ] if not legacy else []) +
+            ([ '--sstate-mirror', sstate_uri ] if sstate_uri else []))
 
 def step_set_build_id(workdir):
     return steps.ShellCommand(
@@ -77,6 +69,13 @@ def step_set_build_id(workdir):
             '-e', util.Interpolate("s:^OPENXT_BUILD_ID\s*=.*:OPENXT_BUILD_ID=\"%(prop:buildnumber)s\":"),
             '-e', util.Interpolate("s:^OPENXT_VERSION\s*=.*:OPENXT_VERSION=\"%(prop:buildername)s\":"),
             './build-0/conf/openxt.conf'])
+
+def step_bordel_layer_add(workdir, layer):
+    return steps.ShellCommand(
+        workdir=workdir,
+        command=[ './openxt/bordel/bordel', 'layer', 'add', layer ],
+        haltOnFailure=True,
+        name='Add layer %s'.format(layer))
 
 def step_bordel_build(workdir):
     return steps.ShellCommand(
@@ -220,55 +219,14 @@ codebase_layout = {
     'xsm-policy': '/openxt/xsm-policy',
 }
 
-#
-# Custom factories.
-# "custom" will run a custom build using each requested repository from the ui.
-
-# Generic bits.
-def factory_custom(workdir_fmt, deploy_base, codebases_oe):
-    f = util.BuildFactory()
-    # Fetch sources.
-    for codebase, _ in codebases_oe.items():
-        # Clone in '/unknown' if the dictionary is not up to date.
-        destdir = codebase_layout.get(codebase, '/unknown/' + codebase)
-        f.addStep(steps.Git(
-            haltOnFailure=True,
-            workdir=util.Interpolate(workdir_fmt + destdir),
-            repourl=util.Interpolate('%(src:' + codebase + ':repository)s'),
-            branch=util.Interpolate('%(src:' + codebase + ':branch)s'),
-            codebase=codebase,
-            mode='incremental', clobberOnFailure=True
-        ))
-    # Builder environment setup (handle first builds).
-    f.addStep(step_init_tree(util.Interpolate(workdir_fmt)))
-    # Build using bordel.
-    f.addStep(step_bordel_config(util.Interpolate(workdir_fmt),
-        util.Interpolate("%(prop:template)s")))
-    f.addStep(step_set_build_id(util.Interpolate(workdir_fmt)))
-    f.addStep(step_bordel_build(util.Interpolate(workdir_fmt)))
-    f.addStep(step_bordel_deploy(util.Interpolate(workdir_fmt)))
-    f.addStep(step_upload_installer(workdir_fmt, deploy_base))
-    f.addStep(step_upload_upgrade(workdir_fmt, deploy_base))
-    return f
-
-# "custom-quick" will try to re-use the downloaded cache and existing sstate.
-def factory_custom_quick(workdir_base, deploy_base, codebases_oe):
-    workdir_fmt = workdir_base + "/%(prop:buildername)s"
-    return factory_custom(workdir_fmt, deploy_base, codebases_oe)
-
-# "custom-clean" will only re-use the download cache.
-def factory_custom_clean(workdir_base, deploy_base, codebases_oe):
+# Factory for OpenXT+Bordel builds until stable-9.
+# The bordel scripts used the bare-clone of each sub-project repository created
+# by Repo-tool as a version-control mirror (SRC_URI in layer recipes).
+def factory_bordel_legacy(workdir_base, deploy_base, codebases_oe):
     workdir_fmt = workdir_base + "/%(prop:buildername)s-%(prop:buildnumber)s"
-    f = factory_custom(workdir_fmt, deploy_base, codebases_oe)
-    f.addStep(step_remove_history(workdir_base))
-    return f
-
-
-# Legacy variation to accomodate, using how SRC_URI was defined until stable-9,
-# the Bordel scripts used the bare clone of each repository created by Repo
-# tool as VC sources.
-def factory_custom_legacy(workdir_fmt, deploy_base, codebases_oe):
     f = util.BuildFactory()
+    # Clean up past artefacts (first to make space if need be).
+    f.addStep(step_remove_history(workdir_base))
     # Fetch sources.
     for codebase, defaults in codebases_oe.items():
         destdir = codebase_layout.get(codebase, '/unknown/' + codebase)
@@ -306,8 +264,8 @@ def factory_custom_legacy(workdir_fmt, deploy_base, codebases_oe):
     # Builder environment setup (handle first builds).
     f.addStep(step_init_tree(util.Interpolate(workdir_fmt)))
     # Build using bordel.
-    f.addStep(step_bordel_config_legacy(util.Interpolate(workdir_fmt),
-        util.Interpolate("%(prop:template)s")))
+    f.addStep(step_bordel_config(util.Interpolate(workdir_fmt),
+        util.Interpolate("%(prop:template)s"), legacy=True))
     f.addStep(step_set_build_id(util.Interpolate(workdir_fmt)))
     f.addStep(step_bordel_build(util.Interpolate(workdir_fmt)))
     f.addStep(step_bordel_deploy(util.Interpolate(workdir_fmt)))
@@ -315,30 +273,22 @@ def factory_custom_legacy(workdir_fmt, deploy_base, codebases_oe):
     f.addStep(step_upload_upgrade(workdir_fmt, deploy_base))
     return f
 
-# "legacy-custom-quick" will try to re-use the downloaded cache and existing sstate.
-def factory_custom_legacy_quick(workdir_base, deploy_base, codebases_oe):
-    workdir_fmt = workdir_base + "/%(prop:buildername)s"
-    return factory_custom_legacy(workdir_fmt, deploy_base, codebases_oe)
 
-# "legacy-custom-clean" will only re-use the download cache.
-def factory_custom_legacy_clean(workdir_base, deploy_base, codebases_oe):
-    workdir_fmt = workdir_base + "/%(prop:buildername)s-%(prop:buildnumber)s"
-    f = factory_custom_legacy(workdir_fmt, deploy_base, codebases_oe)
-    f.addStep(step_remove_history(workdir_base))
-    return f
-
-
-#
-# Stable factory.
-# This is only supported post-SRC_URI refactoring.
-# "stable" will run a build using only the Openembedded resources.
-# No externalsrc involved and the recipes dictate what OE will fetch.
-# Only the download cache is re-used, each build start from a fresh sstate.
-def factory_stable(workdir_base, deploy_base, codebases_stable, deploy_sstate):
+# Factory for OpenXT+Bordel starting from branch "zeus" (post 9.x).
+# Bordel can now use the layers directly without requiring a local mirror for
+# each OpenXT sub-project. A few improvments:
+# - This flavor can export a build shared-state.
+# - Layers named '-externalsrc' present in codebases{}, are layered on top of
+#   the given bblayers.conf provided by the template.
+# - If provided, the builder will try to use the given mirror_sstate.
+def factory_bordel(workdir_base, deploy_base, codebases, deploy_sstate=False,
+        mirror_sstate=""):
     workdir_fmt = workdir_base + "/%(prop:buildername)s-%(prop:buildnumber)s"
     f = util.BuildFactory()
+    # Remove past builds first.
+    f.addStep(step_remove_history(workdir_base))
     # Fetch sources.
-    for codebase, _ in codebases_stable.items():
+    for codebase, _ in codebases.items():
         destdir = codebase_layout.get(codebase, '/unknown/' + codebase)
         f.addStep(steps.Git(
             haltOnFailure=True,
@@ -350,9 +300,15 @@ def factory_stable(workdir_base, deploy_base, codebases_stable, deploy_sstate):
         ))
     # Builder environment setup (handle first builds).
     f.addStep(step_init_tree(util.Interpolate(workdir_fmt)))
-    # Build using bordel.
+    # Configure the build environment.
     f.addStep(step_bordel_config(util.Interpolate(workdir_fmt),
-        util.Interpolate("%(prop:template)s")))
+        util.Interpolate("%(prop:template)s"), legacy=False, sstate_uri=mirror_sstate))
+    # Add externalsrc layers if any.
+    # Note: match '-externalsrc' in codebase name. It lets us re-use the same
+    # templates as regular builds.
+    for codebase, _ in { k: v for k, v in codebases.items() if '-externalsrc' in k }.items():
+        f.addStep(step_bordel_layer_add(util.Interpolate(workdir_fmt), codebase))
+    # Set build-id and build.
     f.addStep(step_set_build_id(util.Interpolate(workdir_fmt)))
     f.addStep(step_bordel_build(util.Interpolate(workdir_fmt)))
     f.addStep(step_bordel_deploy(util.Interpolate(workdir_fmt)))
@@ -361,5 +317,4 @@ def factory_stable(workdir_base, deploy_base, codebases_stable, deploy_sstate):
     if deploy_sstate:
         f.addSteps(step_clean_problematic(workdir_fmt))
         f.addSteps(step_upload_sstate(workdir_fmt, deploy_base))
-    f.addStep(step_remove_history(workdir_base))
     return f
