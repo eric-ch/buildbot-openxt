@@ -104,7 +104,7 @@ def step_upload_upgrade(srcfmt, destfmt):
     destpath = destfmt + "/%(prop:buildername)s/%(prop:buildnumber)s"
     return steps.DirectoryUpload(
         workersrc=util.Interpolate(srcfmt + "/build-0/staging/repository"),
-        masterdest=util.Interpolate(destpath + "/respository"),
+        masterdest=util.Interpolate(destpath + "/repository"),
         url=None)
 
 # Clean sstate of recipes that cause problems as mirror
