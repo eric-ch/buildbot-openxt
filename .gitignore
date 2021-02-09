@@ -10,3 +10,6 @@ __pycache__/
 *.pid
 *.sqlite
 /gitpoller-*
+/.htpasswd
+/http.log*
+/twistd.log*
