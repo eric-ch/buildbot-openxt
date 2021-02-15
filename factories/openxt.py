@@ -95,6 +95,7 @@ def step_bordel_deploy(workdir):
 def step_upload_installer(srcfmt, destfmt):
     destpath = destfmt + "/%(prop:buildername)s/%(prop:buildnumber)s"
     return steps.DirectoryUpload(
+        name='Upload installer',
         workersrc=util.Interpolate(srcfmt + "/build-0/deploy"),
         masterdest=util.Interpolate(destpath),
         url=None)
@@ -103,6 +104,7 @@ def step_upload_installer(srcfmt, destfmt):
 def step_upload_upgrade(srcfmt, destfmt):
     destpath = destfmt + "/%(prop:buildername)s/%(prop:buildnumber)s"
     return steps.DirectoryUpload(
+        name='Upload repository',
         workersrc=util.Interpolate(srcfmt + "/build-0/staging/repository"),
         masterdest=util.Interpolate(destpath + "/repository"),
         url=None)
@@ -112,7 +114,7 @@ def step_clean_problematic(workfmt):
     return [
         steps.ShellSequence(
             workdir=util.Interpolate(workfmt + "/build-0"),
-            name='Clean problematic sstate',
+            name='Clean problematic sstate (dom0)',
             env={
                 'BB_ENV_EXTRAWHITE': "MACHINE DISTRO BUILD_UID LAYERS_DIR",
                 'LAYERS_DIR': util.Interpolate(workfmt + "/build-0/layers"),
@@ -125,18 +127,18 @@ def step_clean_problematic(workfmt):
             commands=[
                 util.ShellArg(command=[ 'bitbake', 'ghc-native',
                     '-c', 'cleansstate' ],
-                    haltOnFailure=True),
+                    haltOnFailure=True, logfile='stdio'),
                 util.ShellArg(command=[ 'bitbake', 'ocaml-cross-x86_64',
                     '-c', 'cleansstate' ],
-                    haltOnFailure=True),
+                    haltOnFailure=True, logfile='stdio'),
                 util.ShellArg(command=[ 'bitbake', 'findlib-cross-x86_64',
                     '-c', 'cleansstate' ],
-                    haltOnFailure=True)
+                    haltOnFailure=True, logfile='stdio')
             ]
         ),
         steps.ShellCommand(
             workdir=util.Interpolate(workfmt + "/build-0"),
-            name='Clean problematic sstate',
+            name='Clean problematic sstate (installer)',
             env={
                 'BB_ENV_EXTRAWHITE': "MACHINE DISTRO BUILD_UID LAYERS_DIR",
                 'LAYERS_DIR': util.Interpolate(workfmt + "/build-0/layers"),
@@ -156,9 +158,12 @@ def step_upload_sstate(srcfmt, destfmt):
 
     return [
         steps.MasterShellCommand(
+            name="Remove stale shared-state.",
+            hideStepIf=lambda results, s: results==SUCCESS,
             command=[ "rm", "-rf", util.Interpolate(destpath)]
         ),
         steps.MultipleFileUpload(
+            name='Upload shared-state',
             workdir=util.Interpolate(srcfmt + '/sstate-cache'),
             workersrcs=['{:02x}'.format(n) for n in range(256)] + ['debian-10'],
             masterdest=util.Interpolate(destpath),
