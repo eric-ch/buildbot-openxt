@@ -61,8 +61,8 @@ codebases_custom_zeus = {
         'revision': '4615057adc2670bc558d9322fa7941363eda3b9c',
     },
     'bordel': {
-        'repository': 'git://github.com/eric-ch/bordel.git',
-        'branch': 'autobuild',
+        'repository': 'git://github.com/apertussolutions/bordel.git',
+        'branch': 'master',
         'revision': '',
     },
     'fbtap': {

@@ -51,8 +51,8 @@ codebases_custom_9 = {
         'revision': '',
     },
     'bordel': {
-        'repository': 'git://github.com/eric-ch/bordel.git',
-        'branch': 'autobuild',
+        'repository': 'git://github.com/apertussolutions/bordel.git',
+        'branch': 'master',
         'revision': '',
     },
     'fbtap': {
