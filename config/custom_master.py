@@ -364,8 +364,8 @@ codebases_custom_master_vglass = {
         'revision': '',
     },
     'glass': {
-        'repository': 'https://gitlab.com/ericch/glass.git',
-        'branch': 'mr-next',
+        'repository': 'https://gitlab.com/vglass/glass.git',
+        'branch': 'master',
         'revision': '',
     },
     'ivc': {
