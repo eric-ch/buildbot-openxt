@@ -75,7 +75,7 @@ def step_bordel_layer_add(workdir, layer):
         workdir=workdir,
         command=[ './openxt/bordel/bordel', 'layer', 'add', layer ],
         haltOnFailure=True,
-        name='Add layer %s'.format(layer))
+        name='Add layer {}'.format(layer))
 
 def step_bordel_build(workdir):
     return steps.ShellCommand(
