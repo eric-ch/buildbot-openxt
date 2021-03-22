@@ -99,7 +99,7 @@ def factory_windows_tools_9_0_0(workdir_base, deploydir, codebases):
         repourl=util.Interpolate('%(src:win-pv:repository)s'),
         branch=util.Interpolate('%(src:win-pv:branch)s'),
         codebase='win-pv',
-        mode='full', method='fresh', clobberOnFailure=True,
+        mode='full', method='clobber', clobberOnFailure=True,
         submodules=True
     ))
     f.addStep(steps.ShellCommand(
