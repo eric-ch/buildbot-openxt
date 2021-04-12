@@ -49,15 +49,22 @@ def step_remove_history(workdir):
             ")])
 
 def step_bordel_config(workdir, template, legacy=False, sstate_uri=""):
-    return steps.ShellCommand(
+    return steps.ShellSequence(
         workdir=workdir,
         haltOnFailure=True,
         name='Configure source tree',
-        command=[ './openxt/bordel/bordel', '-i', '0', 'config',
-            '--default', '--force', '--rmwork', '--no-repo-branch',
-            '-t', template ] +
-            ([ '--no-repo-branch' ] if not legacy else []) +
-            ([ '--sstate-mirror', sstate_uri ] if sstate_uri else []))
+        commands=[
+            util.ShellArg(command=[ './openxt/bordel/bordel', '-i', '0', 'config',
+                '--default', '--force', '--rmwork', '--no-repo-branch',
+                '-t', template ] +
+                ([ '--no-repo-branch' ] if not legacy else []) +
+                ([ '--sstate-mirror', sstate_uri ] if sstate_uri else []),
+                haltOnFailure=True, logfile='stdio'),
+            util.ShellArg(command=[ 'sed', '-i',
+                '-e', '$aKERNEL_MODULE_SIG_KEY = "${OPENXT_CERTS_DIR}/kernel_key.pem"',
+                '-e', '$aKERNEL_MODULE_SIG_CERT = "${OPENXT_CERTS_DIR}/kernel_cert.pem"',
+                './build-0/conf/auto.conf'])
+        ])
 
 def step_set_build_id(workdir):
     return steps.ShellCommand(
