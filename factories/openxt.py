@@ -43,7 +43,7 @@ def step_remove_history(workdir):
         haltOnFailure=True,
         command=[ '/bin/sh', '-c', util.Interpolate(" \
             find . -maxdepth 1 ! -path . -name '%(prop:buildername)s-[0-9]*' | \
-            sort -t - -k 2 -g | \
+            sort -V | \
             head -n-2 | \
             xargs rm -rf \
             ")])
