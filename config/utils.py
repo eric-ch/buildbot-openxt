@@ -22,7 +22,6 @@ from config.custom_zeus import codebases_custom_zeus
 from config.stable_zeus import codebases_stable_zeus
 from config.custom_master import (
     codebases_custom_master,
-    codebases_custom_master_vglass,
 )
 from config.stable_master import codebases_stable_master
 
@@ -38,7 +37,6 @@ for cb in [
         codebases_custom_zeus,
         codebases_stable_zeus,
         codebases_custom_master,
-        codebases_custom_master_vglass,
         codebases_stable_master,
         codebases_windows_tools_8_2_0,
         codebases_windows_tools_9_0_0 ]:

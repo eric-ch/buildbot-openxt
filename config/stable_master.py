@@ -35,6 +35,11 @@ codebases_stable_master = {
         'branch': 'dunfell',
         'revision': '',
     },
+    'meta-qt5': {
+        'repository': 'git://github.com/meta-qt5/meta-qt5',
+        'branch': 'dunfell',
+        'revision': '',
+    },
     'meta-openxt-haskell-platform': {
         'repository': 'git://github.com/OpenXT/meta-openxt-haskell-platform.git',
         'branch': 'master',
@@ -45,14 +50,19 @@ codebases_stable_master = {
         'branch': 'master',
         'revision': '',
     },
+    'meta-vglass': {
+        'repository': 'https://gitlab.com/vglass/meta-vglass.git',
+        'branch': 'master',
+        'revision': '',
+    },
     'xenclient-oe': {
         'repository': 'git://github.com/OpenXT/xenclient-oe.git',
         'branch': 'master',
         'revision': '',
     },
     'bordel': {
-        'repository': 'git://github.com/apertussolutions/bordel.git',
-        'branch': 'master',
+        'repository': 'git://github.com/eric-ch/bordel.git',
+        'branch': 'vglass',
         'revision': '',
     },
 }
