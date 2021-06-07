@@ -58,11 +58,7 @@ def step_bordel_config(workdir, template, legacy=False, sstate_uri=""):
                 '--default', '--force', '--rmwork', '-t', template ] +
                 ([ '--no-repo-branch' ] if not legacy else []) +
                 ([ '--sstate-mirror', sstate_uri ] if sstate_uri else []),
-                haltOnFailure=True, logfile='stdio'),
-            util.ShellArg(command=[ 'sed', '-i',
-                '-e', '$aKERNEL_MODULE_SIG_KEY = "${OPENXT_CERTS_DIR}/kernel_key.pem"',
-                '-e', '$aKERNEL_MODULE_SIG_CERT = "${OPENXT_CERTS_DIR}/kernel_cert.pem"',
-                './build-0/conf/auto.conf'])
+                haltOnFailure=True, logfile='stdio')
         ])
 
 def step_set_build_id(workdir):
