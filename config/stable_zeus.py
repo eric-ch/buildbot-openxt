@@ -51,7 +51,7 @@ codebases_stable_zeus = {
         'revision': '',
     },
     'bordel': {
-        'repository': 'https://github.com/apertussolutions/bordel.git',
+        'repository': 'https://github.com/OpenXT/bordel.git',
         'branch': 'master',
         'revision': '',
     },

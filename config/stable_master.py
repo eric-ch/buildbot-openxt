@@ -61,8 +61,8 @@ codebases_stable_master = {
         'revision': '',
     },
     'bordel': {
-        'repository': 'https://github.com/eric-ch/bordel.git',
-        'branch': 'vglass',
+        'repository': 'https://github.com/OpenXT/bordel.git',
+        'branch': 'master',
         'revision': '',
     },
 }
